@@ -1,1 +1,8 @@
-open and read a *.sgm file 
+Open and read a *.sgm file
+
+Find things that look like HTML tags:
+    Regular expression matching and method to find the inner part of the tag 
+    (called 'tag')
+
+For each article, create an instance of 'article' class and store contents of
+    each tag in members of the 'article' class
