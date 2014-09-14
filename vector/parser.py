@@ -15,58 +15,68 @@ class Article:
         self.full_text  = buff
 
 class Tag:
-    def __init__(lex):
-        self.lex = lex
+    def __init__(self, name):
+        self.name = name
+        # should find some way of returning two packed tag objects?
+
+    def take_full_text(self, fp):
+        buff    = ''
+
+        while True:
+            s = fp.readline()
+            if not s:
+                print 'Couldn\'t read'
+                return FAIL
+
+            if '<'+self.name in s:
+                startfrom   = s.index('<'+self.name)
+                buff        = s[startfrom:]+' '
+                in_this_tag = True
+            elif in_this_tag is True:
+                if '</'+self.name+'>' in s:
+                    endat   = s.index('</'+self.name+'>')
+                    in_this_tag = False
+                else:
+                    endat   = len(s)
+                buff += s[0:endat]+' '
+                if in_this_tag is False:
+                    article_list.append(Article(len(article_list)+1, buff))
+        return fp
+
 
 class Parser:
     def __init__():
         # create instances for all kinds of tags
-        [reuters_stag, reuters_etag]    = Tag('REUTERS')
-        [date_stag, date_etag]          = Tag('DATE')
-        [topics_stag, topics_etag]      = Tag('TOPICS')
-        [places_stag, places_etag]      = Tag('PLACES')
-        [d_stag, d_etag]                = Tag('D')      # Do we need this?
-        [people_stag, people_etag]      = Tag('PEOPLE')
-        [orgs_stag, orgs_etag]          = Tag('ORGS')
-        [exchanges_stag, exchanges_etag]= Tag('EXCHANGES')
-        [companies_stag, companies_etag]= Tag('COMPANIES')
-        [unknown_stag, unknown_etag]    = Tag('UNKNOWN')
-        [text_stag, text_etag]          = Tag('TEXT')
-        [dateline_stag, dateline_etag]  = Tag('DATELINE')
-        [body_stag, body_etag]          = Tag('BODY')
+        interesting_tags = ['DATE', 'TOPICS', 'PLACES', 'D',
+                            'PEOPLE', 'ORGS', 'EXCHANGES', 'COMPANIES',
+                            'UNKNOWN', 'TEXT', 'DATELINE', 'BODY']
+        tags = {}
+        for tagnames in interesting_tags:
+            tags[tagnames] = Tag(tagnames)
 
     def process_file(f):
-        try:
-            fp = open(REUTERS_DIR+f)
-        except:
-            print "COULDN'T OPEN "+REUTERS_DIR+f
-            return FAIL
+        with open(REUTERS_DIR+f) as fp:
+            # process 'REUTERS' from here; that will take care of the rest
+            # of the tags because :
+            #  - it is the first tag of interest in the document
+            #  - the whole article is contained in it
 
-        in_reuters  = False
-        s           = '1'
-        buff        = ''
-
-        while s:
-            try:
+            while True:
                 s = fp.readline()
-            except:
-                print "COLDN'T READ LINE"
-                return FAIL
+                if not s:
+                    break
 
-            if '<REUTERS' in s:
-                startfrom   = s.index('<REUTERS')
-                buff        = s[startfrom:]+' '
-                in_reuters  = True
-            elif in_reuters is True:
-                if '</REUTERS>' in s:
-                    endat   = s.index('</REUTERS>')
-                    in_reuters = False
-                else:
-                    endat   = len(s)
-                buff += s[0:endat]+' '
-                if in_reuters is False:
-                    article_list.append(Article(len(article_list)+1, buff))
+                # seek the file object to the beginning of the 'REUTERS' tag
+                while '<REUTERS' not in s:
+                    s.readline()
+                length = len(s) - s.index('<REUTERS')
+                fp.seek(-1*length, 1)
 
+                # now, fp is where 'REUTERS' tag begins
+                # HARI : may not need this 'fp = ...'
+                fp = tags['REUTERS'].take_full_text(fp)
+
+        print 'DONE WITH {}'.format(f)
         return DONE
 
 def main():
