@@ -9,6 +9,7 @@ article_list = []                       # list in which we will store instances
 FAIL = 1
 DONE = 0
 
+
 class Article:
     def __init__(self, x):
         self.id     = x                 # an 'id' is actually not needed at all
@@ -29,35 +30,73 @@ class Tag:
         self.tokens = tokens
 
     def tagify_to_article(self, article, fp):
+        import ipdb; ipdb.set_trace()
         while True:
-            s = fp.readline()
+            s = fp.readline().strip()
             if not s:
                 print 'Couldn\'t read'
                 return FAIL
 
+            startfrom   = 0
+            endat       = len(s)
+
             if '<'+self.name in s:
-                startfrom   = s.index('<'+self.name)
-                self.text   += s[startfrom:]+' '
+                startfrom   = s.index('>', s.index('<'+self.name)+1)+1
                 in_this_tag = True
-            elif in_this_tag is True:
-                if '</'+self.name+'>' in s:
-                    endat   = s.index('</'+self.name+'>')
+            else:
+                if in_this_tag is True and '</'+self.name+'>' in s:
+                    endat       = s.index('</'+self.name+'>')
                     in_this_tag = False
-                else:
-                    endat   = len(s)
-                self.text   += s[0:endat]+' '
-                if in_this_tag is False:
                     # we are done processing the tag in question
                     # and so, can break here
                     break
 
+            extracted   = s[startfrom:endat-1]          # 'extracted'
+
+            # ideally, extracted should begin with '<' if there is a
+            # nested tag
+            if '<' in extracted:
+                if extracted[extracted.index('<')+1] is not '/':
+                    # this text signifies the name of the nested tag that
+                    # we are extracting
+                    begins_at   = extracted.index('<')+1
+                    space_at    = tag_ends_at   = len(extracted)+1000
+
+                    if ' ' in extracted[begins_at:]:
+                        space_at    = extracted.index(' ', begins_at+1)
+                    if '>' in extracted[begins_at:]:
+                        tag_ends_at = extracted.index('>', begins_at+1)
+
+                    if space_at < tag_ends_at:
+                        tag_until   = space_at
+                    else:
+                        tag_until   = tag_ends_at
+
+                    nested_tag  = extracted[begins_at:tag_until]
+                    length  = len(s) - s.index('<'+nested_tag) + 1
+                    fp.seek(-1*length, 1)
+                    parser.tags[nested_tag].tagify_to_article(article, fp)
+
+                    extracted   = ''
+                    s           = ''
+                    break
+                else:
+                    hari = 1   # just skipping closing tags
+
+            # think about whether to store stripped strings
+            self.text   += extracted+' '
+            s   = s[endat + len(self.name+'>'):]
+
         # we have all the text at this point; we should
         # do the token processing at this stage.
+        
 
         # this new tag should be appended to an Article
         article.take_this_tag(self.name, self.text, self.tokens)
         self.text   = ''
         self.tokens = []
+
+        fp.seek(-1*len(s), 1)
         return fp
 
 class Parser:
@@ -103,14 +142,16 @@ class Parser:
         print 'DONE WITH {}'.format(f)
         return DONE
 
+parser = Parser()
+
 def main():
     # Finding all the files in the REUTERS directory
     for f in os.listdir(REUTERS_DIR):
         if f.endswith('.sgm'):
-            parser = Parser()
             parser.process_file(f)
             # call the vector finder class or something for each file
 
 if __name__ == "__main__":
     main()
     print 'Processed {} articles'.format(len(article_list))
+    import ipdb; ipdb.set_trace()
