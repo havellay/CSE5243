@@ -1,4 +1,8 @@
 import os
+import nltk
+from nltk.stem.porter import *
+from nltk.corpus import stopwords
+import string
 
 REUTERS_DIR = '../reuters/'             # relative location of directory where
                                         # the reuters dataset is stored
@@ -8,6 +12,8 @@ article_list = []                       # list in which we will store instances
 
 FAIL = 1
 DONE = 0
+
+stemmer = PorterStemmer()
 
 class Article:
     def __init__(self, x):
@@ -34,7 +40,7 @@ class Tag:
 
             # This is purely a hack; need to fix what happens
             # for the last article
-            if len(article_list) == 1000:
+            if len(article_list) % 1000 == 0:
                 hit_count   += 1
                 if hit_count == 10:
                     break
@@ -107,12 +113,25 @@ class Tag:
 
         # we have all the text at this point; we should
         # do the token processing at this stage.
-        
+        if self.name == 'BODY':
+            exclude = set(string.punctuation)
+            text    = ''.join(ch for ch in self.text if ch not in exclude)
+            all_tokens = text.split()
+            all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
+            for tok in all_tokens:
+                self.tokens.append(stemmer.stem(tok))
 
         # this new tag should be appended to an Article
         article.take_this_tag(self.name, self.text, self.tokens)
+        # if len(self.text) is 0:
+        #     print '{} doesn\'t have any text'.format(self.name)
+
         self.text   = ''
         self.tokens = []
+
+        if len(article_list) % 1000 == 0 or len(article_list) == 10578:
+            fp.seek(0,2)
+            return fp
 
         length  = len(s) - s.index('>', endat) + 1
         # import ipdb; ipdb.set_trace()       # make sure that this is alright
