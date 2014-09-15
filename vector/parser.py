@@ -9,7 +9,6 @@ article_list = []                       # list in which we will store instances
 FAIL = 1
 DONE = 0
 
-
 class Article:
     def __init__(self, x):
         self.id     = x                 # an 'id' is actually not needed at all
@@ -20,8 +19,8 @@ class Article:
     def take_this_tag(self, tag_name, tag_text, tag_tokens):
         self.tags[tag_name] = Tag(tag_name, tag_text, tag_tokens)
         # should we make sure whether there is already a tag with this name? It
-        # could become an issue for tags such as <D> of which there might already
-        # be a copy
+        # could become an issue for tags such as <D> of which there might
+        # already be a copy
 
 class Tag:
     def __init__(self, name, text='', tokens=[]):
@@ -30,9 +29,17 @@ class Tag:
         self.tokens = tokens
 
     def tagify_to_article(self, article, fp):
-        import ipdb; ipdb.set_trace()
+        hit_count   = 0
         while True:
-            s = fp.readline().strip()
+
+            # This is purely a hack; need to fix what happens
+            # for the last article
+            if len(article_list) == 1000:
+                hit_count   += 1
+                if hit_count == 10:
+                    break
+
+            s = fp.readline()
             if not s:
                 print 'Couldn\'t read'
                 return FAIL
@@ -43,13 +50,16 @@ class Tag:
             if '<'+self.name in s:
                 startfrom   = s.index('>', s.index('<'+self.name)+1)+1
                 in_this_tag = True
-            else:
-                if in_this_tag is True and '</'+self.name+'>' in s:
-                    endat       = s.index('</'+self.name+'>')
-                    in_this_tag = False
-                    # we are done processing the tag in question
-                    # and so, can break here
-                    break
+            if s == '\n':
+                continue
+            if in_this_tag is True and '</'+self.name+'>' in s:
+                endat       = s.index('</'+self.name+'>')
+                in_this_tag = False
+                # we are done processing the tag in question
+                # and so, can break here
+                extracted   = s[startfrom:endat-1]          # 'extracted'
+                self.text   += extracted
+                break
 
             extracted   = s[startfrom:endat-1]          # 'extracted'
 
@@ -73,14 +83,22 @@ class Tag:
                         tag_until   = tag_ends_at
 
                     nested_tag  = extracted[begins_at:tag_until]
+
                     length  = len(s) - s.index('<'+nested_tag) + 1
+                    # it looks like this should be .... -1 ^
+
                     fp.seek(-1*length, 1)
-                    parser.tags[nested_tag].tagify_to_article(article, fp)
+                    parser.worker_tags[nested_tag].tagify_to_article(article, fp)
 
                     extracted   = ''
                     s           = ''
-                    break
+                    # import ipdb; ipdb.set_trace()
+                    continue
+                    # break
                 else:
+                    print 'should never reach here'
+                    import ipdb; ipdb.set_trace()
+                    break
                     hari = 1   # just skipping closing tags
 
             # think about whether to store stripped strings
@@ -96,17 +114,20 @@ class Tag:
         self.text   = ''
         self.tokens = []
 
-        fp.seek(-1*len(s), 1)
+        length  = len(s) - s.index('>', endat) + 1
+        # import ipdb; ipdb.set_trace()       # make sure that this is alright
+        fp.seek(-1*length, 1)
         return fp
 
 class Parser:
-    tags = {}
+    worker_tags = {}
 
     def __init__(self):
         # create instances for all kinds of tags
         interesting_tags = ['REUTERS', 'DATE', 'TOPICS', 'PLACES', 'D',
                             'PEOPLE', 'ORGS', 'EXCHANGES', 'COMPANIES',
-                            'UNKNOWN', 'TEXT', 'DATELINE', 'BODY']
+                            'UNKNOWN', 'TEXT', 'DATELINE', 'BODY', 
+                            'TITLE', 'AUTHOR', 'MKNOTE']
 
         # 'tags' is a dictionary containing instances of tags that are just
         # meant to be worker tag objects; they won't hold any data in them
@@ -114,7 +135,7 @@ class Parser:
         # an article's take_this_tag() method which clones the tag and then,
         # the contents of the worker tags are cleared
         for tagnames in interesting_tags:
-            self.tags[tagnames] = Tag(tagnames)
+            self.worker_tags[tagnames] = Tag(tagnames)
 
     def process_file(self, f):
         with open(REUTERS_DIR+f) as fp:
@@ -137,7 +158,8 @@ class Parser:
                 # now, fp is where 'REUTERS' tag begins
                 article = Article(len(article_list)+1)
                 article_list.append(article)
-                self.tags['REUTERS'].tagify_to_article(article, fp)
+                self.worker_tags['REUTERS'].tagify_to_article(article, fp)
+                print 'article {} done'.format(article.id)
 
         print 'DONE WITH {}'.format(f)
         return DONE
