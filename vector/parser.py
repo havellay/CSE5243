@@ -1,8 +1,10 @@
 import os
 import nltk
+import string
+import math
+
 from nltk.stem.porter import *
 from nltk.corpus import stopwords
-import string
 
 REUTERS_DIR = '../reuters/'             # relative location of directory where
                                         # the reuters dataset is stored
@@ -14,6 +16,51 @@ FAIL = 1
 DONE = 0
 
 stemmer = PorterStemmer()
+
+class Fvector:
+    vec_sum     = {}            # feature vector that contains the sum of the
+                                # different tokens in the tag
+
+    vec_tfidf   = {}            # feature vector that contains TFIDF of tokens
+
+    doc_with_word   = {}        # a dict that stores the number of docs that
+                                # contain a word
+
+    def add_to_vec_sum(self, articleid, tokens):
+        max_freq = 0
+        v   = {}
+        for tok in tokens:
+            tok = string.lower(tok)
+            if v.get(tok) is None:
+                v[tok]  = 1
+            else:
+                v[tok]  += 1
+            max_freq    = max(v[tok], max_freq)
+
+        for tok in v:
+            tok = string.lower(tok)
+            v[tok]  = 0.5 + (0.5*v[tok])/max_freq
+            if self.doc_with_word.get(tok) is None:
+                self.doc_with_word[tok]  = 1
+            else:
+                self.doc_with_word[tok]  += 1
+
+        self.vec_sum[articleid] = v
+
+    def add_to_tf_idf(self, articleid, tokens):
+        tf_dict = vec_sum[articleid]
+        v       = {}
+        tokset  = set(tokens)
+
+        for tok in tokset:
+            tok = string.lower(tok)
+            v[tok]  = tf_dict[tok]*(
+                        math.log(len(article_list)/self.doc_with_word[tok])
+                    )
+
+        self.vec_tfidf[articleid] = v
+
+fvector = Fvector()
 
 class Article:
     def __init__(self, x):
@@ -118,8 +165,11 @@ class Tag:
             text    = ''.join(ch for ch in self.text if ch not in exclude)
             all_tokens = text.split()
             all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
+            all_tokens = [w for w in all_tokens if w.isdigit() is False]
             for tok in all_tokens:
                 self.tokens.append(stemmer.stem(tok))
+            fvector.add_to_vec_sum(article.id, self.tokens)
+            # fvector.add_to_tf_idf(article.id, self.tokens)
 
         # this new tag should be appended to an Article
         article.take_this_tag(self.name, self.text, self.tokens)
@@ -178,7 +228,7 @@ class Parser:
                 article = Article(len(article_list)+1)
                 article_list.append(article)
                 self.worker_tags['REUTERS'].tagify_to_article(article, fp)
-                print 'article {} done'.format(article.id)
+                # print 'article {} done'.format(article.id)
 
         print 'DONE WITH {}'.format(f)
         return DONE
@@ -195,4 +245,14 @@ def main():
 if __name__ == "__main__":
     main()
     print 'Processed {} articles'.format(len(article_list))
+
+    not_needed  = []
+    needed      = []
+
+    for v in fvector.doc_with_word:
+        if fvector.doc_with_word[v] == 1:
+            not_needed.append(v)
+        else:
+            needed.append(v)
+
     import ipdb; ipdb.set_trace()
