@@ -25,6 +25,7 @@ class Fvector:
 
     doc_with_word   = {}        # a dict that stores the number of docs that
                                 # contain a word
+    abs_doc_with_word = {}      #
 
     def add_to_vec_sum(self, articleid, tokens):
         max_freq = 0
@@ -35,9 +36,15 @@ class Fvector:
                 v[tok]  = 1
             else:
                 v[tok]  += 1
+
+            if self.abs_doc_with_word.get(tok) is None:
+                self.abs_doc_with_word[tok] = 1
+            else:
+                self.abs_doc_with_word[tok] += 1
+
             max_freq    = max(v[tok], max_freq)
 
-        for tok in v:
+        for tok in v: #Unique words - v
             tok = string.lower(tok)
             v[tok]  = 0.5 + (0.5*v[tok])/max_freq
             if self.doc_with_word.get(tok) is None:
@@ -162,7 +169,14 @@ class Tag:
         # do the token processing at this stage.
         if self.name == 'BODY':
             exclude = set(string.punctuation)
-            text    = ''.join(ch for ch in self.text if ch not in exclude)
+            text = ''
+	    for ch in  self.text:
+                if ch in exclude:
+                    text += ' '
+                else:
+                    text += ch
+
+            # text    = ''.join(ch for ch in self.text if ch not in exclude)
             all_tokens = text.split()
             all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
             all_tokens = [w for w in all_tokens if w.isdigit() is False]
@@ -207,6 +221,7 @@ class Parser:
             self.worker_tags[tagnames] = Tag(tagnames)
 
     def process_file(self, f):
+	
         with open(REUTERS_DIR+f) as fp:
             # process 'REUTERS' from here; that will take care of the rest
             # of the tags because :
@@ -214,6 +229,7 @@ class Parser:
             #  - the whole article is contained in it
 
             while True:
+		print f
                 s = fp.readline()
                 if not s:
                     break
@@ -235,6 +251,23 @@ class Parser:
 
 parser = Parser()
 
+def ninetyninetoone(count_list):
+    maximum = 0
+    minimum = 100
+    for v in count_list:
+        maximum = max(count_list[v], maximum)
+        minimum = min(count_list[v], minimum)
+
+    freq_range = maximum - minimum
+    interesting_upper = maximum - 0.01*freq_range
+    interesting_lower = minimum + 0.01*freq_range
+
+    considering_this = []
+    for v in count_list:
+        if count_list[v] <= interesting_upper and count_list[v] >= interesting_lower:
+            considering_this.append(v)
+    import ipdb; ipdb.set_trace()
+
 def main():
     # Finding all the files in the REUTERS directory
     for f in os.listdir(REUTERS_DIR):
@@ -255,4 +288,8 @@ if __name__ == "__main__":
         else:
             needed.append(v)
 
+    ninetyninetoone(fvector.doc_with_word)
+    ninetyninetoone(fvector.abs_doc_with_word)
+
     import ipdb; ipdb.set_trace()
+
