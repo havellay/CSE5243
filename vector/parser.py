@@ -162,7 +162,14 @@ class Tag:
         # do the token processing at this stage.
         if self.name == 'BODY':
             exclude = set(string.punctuation)
-            text    = ''.join(ch for ch in self.text if ch not in exclude)
+            text = ''
+            for ch in self.text:
+                if ch not in exclude:
+                    text = text + ch
+                else:
+                    text = text + ' '
+            # text    = ''.join(ch for ch in self.text if ch not in exclude)
+            # import ipdb; ipdb.set_trace()
             all_tokens = text.split()
             all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
             all_tokens = [w for w in all_tokens if w.isdigit() is False]
