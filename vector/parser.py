@@ -25,7 +25,9 @@ class Fvector:
 
     doc_with_word   = {}        # a dict that stores the number of docs that
                                 # contain a word
-    abs_doc_with_word = {}      #
+
+    word_count_in_data = {}     # a dict that stores the number of times the 
+                                # word occurs across document
 
     def add_to_vec_sum(self, articleid, tokens):
         max_freq = 0
@@ -37,10 +39,10 @@ class Fvector:
             else:
                 v[tok]  += 1
 
-            if self.abs_doc_with_word.get(tok) is None:
-                self.abs_doc_with_word[tok] = 1
+            if self.word_count_in_data.get(tok) is None:
+                self.word_count_in_data[tok] = 1
             else:
-                self.abs_doc_with_word[tok] += 1
+                self.word_count_in_data[tok] += 1
 
             max_freq    = max(v[tok], max_freq)
 
@@ -55,14 +57,14 @@ class Fvector:
         self.vec_sum[articleid] = v
 
     def add_to_tf_idf(self, articleid, tokens):
-        tf_dict = vec_sum[articleid]
+        tf_dict = self.vec_sum[articleid]
         v       = {}
         tokset  = set(tokens)
 
         for tok in tokset:
             tok = string.lower(tok)
             v[tok]  = tf_dict[tok]*(
-                        math.log(len(article_list)/self.doc_with_word[tok])
+                        math.log(21578/self.doc_with_word[tok])
                     )
 
         self.vec_tfidf[articleid] = v
@@ -183,12 +185,9 @@ class Tag:
             for tok in all_tokens:
                 self.tokens.append(stemmer.stem(tok))
             fvector.add_to_vec_sum(article.id, self.tokens)
-            # fvector.add_to_tf_idf(article.id, self.tokens)
 
         # this new tag should be appended to an Article
         article.take_this_tag(self.name, self.text, self.tokens)
-        # if len(self.text) is 0:
-        #     print '{} doesn\'t have any text'.format(self.name)
 
         self.text   = ''
         self.tokens = []
@@ -198,7 +197,6 @@ class Tag:
             return fp
 
         length  = len(s) - s.index('>', endat) + 1
-        # import ipdb; ipdb.set_trace()       # make sure that this is alright
         fp.seek(-1*length, 1)
         return fp
 
@@ -273,6 +271,12 @@ def main():
             parser.process_file(f)
             # call the vector finder class or something for each file
 
+    # all document and article sdone, we can find the tf-idf
+    for art in article_list:
+        bodytag = art.tags.get('BODY')
+        if bodytag is not None:
+            fvector.add_to_tf_idf(art.id, bodytag.tokens)
+
 if __name__ == "__main__":
     main()
     print 'Processed {} articles'.format(len(article_list))
@@ -287,7 +291,7 @@ if __name__ == "__main__":
             needed.append(v)
 
     ninetyninetoone(fvector.doc_with_word)
-    ninetyninetoone(fvector.abs_doc_with_word)
+    ninetyninetoone(fvector.word_count_in_data)
 
     import ipdb; ipdb.set_trace()
 
