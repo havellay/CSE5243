@@ -3,202 +3,15 @@ import nltk
 import string
 import math
 
-from nltk.stem.porter import *
-from nltk.corpus import stopwords
+from Fvector import Fvector, fvector
+from Article import Article
+from Tag import Tag, article_list
 
 REUTERS_DIR = '../reuters/'             # relative location of directory where
                                         # the reuters dataset is stored
-    
-article_list = []                       # list in which we will store instances
-                                        # of Article
 
 FAIL = 1
 DONE = 0
-
-stemmer = PorterStemmer()
-
-class Fvector:
-    vec_sum     = {}            # feature vector that contains the sum of the
-                                # different tokens in the tag
-
-    vec_tfidf   = {}            # feature vector that contains TFIDF of tokens
-
-    doc_with_word   = {}        # a dict that stores the number of docs that
-                                # contain a word
-
-    word_count_in_data = {}     # a dict that stores the number of times the 
-                                # word occurs across document
-
-    def add_to_vec_sum(self, articleid, tokens):
-        max_freq = 0
-        v   = {}
-        for tok in tokens:
-            tok = string.lower(tok)
-            if v.get(tok) is None:
-                v[tok]  = 1
-            else:
-                v[tok]  += 1
-
-            if self.word_count_in_data.get(tok) is None:
-                self.word_count_in_data[tok] = 1
-            else:
-                self.word_count_in_data[tok] += 1
-
-            max_freq    = max(v[tok], max_freq)
-
-        for tok in v: #Unique words - v
-            tok = string.lower(tok)
-            v[tok]  = 0.5 + (0.5*v[tok])/max_freq
-            if self.doc_with_word.get(tok) is None:
-                self.doc_with_word[tok]  = 1
-            else:
-                self.doc_with_word[tok]  += 1
-
-        self.vec_sum[articleid] = v
-
-    def add_to_tf_idf(self, articleid, tokens):
-        tf_dict = self.vec_sum[articleid]
-        v       = {}
-        tokset  = set(tokens)
-
-        for tok in tokset:
-            tok = string.lower(tok)
-            v[tok]  = tf_dict[tok]*(
-                        math.log(21578/self.doc_with_word[tok])
-                    )
-
-        self.vec_tfidf[articleid] = v
-
-fvector = Fvector()
-
-class Article:
-    def __init__(self, x):
-        self.id     = x                 # an 'id' is actually not needed at all
-
-        self.tags   = {}                # a dictionary containing all the tags
-                                        # in an article
-
-    def take_this_tag(self, tag_name, tag_text, tag_tokens):
-        self.tags[tag_name] = Tag(tag_name, tag_text, tag_tokens)
-        # should we make sure whether there is already a tag with this name? It
-        # could become an issue for tags such as <D> of which there might
-        # already be a copy
-
-class Tag:
-    def __init__(self, name, text='', tokens=[]):
-        self.name   = name
-        self.text   = text
-        self.tokens = tokens
-
-    def tagify_to_article(self, article, fp):
-        hit_count   = 0
-        while True:
-
-            # This is purely a hack; need to fix what happens
-            # for the last article
-            if len(article_list) % 1000 == 0:
-                hit_count   += 1
-                if hit_count == 10:
-                    break
-
-            s = fp.readline()
-            if not s:
-                print 'Couldn\'t read'
-                return FAIL
-
-            startfrom   = 0
-            endat       = len(s)
-
-            if '<'+self.name in s:
-                startfrom   = s.index('>', s.index('<'+self.name)+1)+1
-                in_this_tag = True
-            if s == '\n':
-                continue
-            if in_this_tag is True and '</'+self.name+'>' in s:
-                endat       = s.index('</'+self.name+'>')
-                in_this_tag = False
-                # we are done processing the tag in question
-                # and so, can break here
-                extracted   = s[startfrom:endat-1]          # 'extracted'
-                self.text   += extracted
-                break
-
-            extracted   = s[startfrom:endat-1]          # 'extracted'
-
-            # ideally, extracted should begin with '<' if there is a
-            # nested tag
-            if '<' in extracted:
-                if extracted[extracted.index('<')+1] is not '/':
-                    # this text signifies the name of the nested tag that
-                    # we are extracting
-                    begins_at   = extracted.index('<')+1
-                    space_at    = tag_ends_at   = len(extracted)+1000
-
-                    if ' ' in extracted[begins_at:]:
-                        space_at    = extracted.index(' ', begins_at+1)
-                    if '>' in extracted[begins_at:]:
-                        tag_ends_at = extracted.index('>', begins_at+1)
-
-                    if space_at < tag_ends_at:
-                        tag_until   = space_at
-                    else:
-                        tag_until   = tag_ends_at
-
-                    nested_tag  = extracted[begins_at:tag_until]
-
-                    length  = len(s) - s.index('<'+nested_tag) + 1
-                    # it looks like this should be .... -1 ^
-
-                    fp.seek(-1*length, 1)
-                    parser.worker_tags[nested_tag].tagify_to_article(article, fp)
-
-                    extracted   = ''
-                    s           = ''
-                    # import ipdb; ipdb.set_trace()
-                    continue
-                    # break
-                else:
-                    print 'should never reach here'
-                    import ipdb; ipdb.set_trace()
-                    break
-                    hari = 1   # just skipping closing tags
-
-            # think about whether to store stripped strings
-            self.text   += extracted+' '
-            s   = s[endat + len(self.name+'>'):]
-
-        # we have all the text at this point; we should
-        # do the token processing at this stage.
-        if self.name == 'BODY':
-            exclude = set(string.punctuation)
-            text = ''
-	    for ch in  self.text:
-                if ch in exclude:
-                    text += ' '
-                else:
-                    text += ch
-
-            # text    = ''.join(ch for ch in self.text if ch not in exclude)
-            all_tokens = text.split()
-            all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
-            all_tokens = [w for w in all_tokens if w.isdigit() is False]
-            for tok in all_tokens:
-                self.tokens.append(stemmer.stem(tok))
-            fvector.add_to_vec_sum(article.id, self.tokens)
-
-        # this new tag should be appended to an Article
-        article.take_this_tag(self.name, self.text, self.tokens)
-
-        self.text   = ''
-        self.tokens = []
-
-        if len(article_list) % 1000 == 0 or len(article_list) == 10578:
-            fp.seek(0,2)
-            return fp
-
-        length  = len(s) - s.index('>', endat) + 1
-        fp.seek(-1*length, 1)
-        return fp
 
 class Parser:
     worker_tags = {}
@@ -216,7 +29,7 @@ class Parser:
         # an article's take_this_tag() method which clones the tag and then,
         # the contents of the worker tags are cleared
         for tagnames in interesting_tags:
-            self.worker_tags[tagnames] = Tag(tagnames)
+            self.worker_tags[tagnames] = Tag(name=tagnames, parser=self)
 
     def process_file(self, f):
         with open(REUTERS_DIR+f) as fp:
@@ -272,10 +85,10 @@ def main():
             # call the vector finder class or something for each file
 
     # all document and article sdone, we can find the tf-idf
-    for art in article_list:
-        bodytag = art.tags.get('BODY')
-        if bodytag is not None:
-            fvector.add_to_tf_idf(art.id, bodytag.tokens)
+    # for art in article_list:
+    #     bodytag = art.tags.get('BODY')
+    #     if bodytag is not None:
+    #         fvector.add_to_tf_idf(art.id, bodytag.tokens)
 
 if __name__ == "__main__":
     main()
