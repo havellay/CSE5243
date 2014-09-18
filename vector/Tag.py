@@ -13,13 +13,19 @@ FAIL = 1
 DONE = 0
 
 class Tag:
-    def __init__(self, name=None, text='', tokens=[], parser=None):
-        self.name   = name
-        self.text   = text
-        self.tokens = tokens
-        self.parser = parser
+    def __init__(
+            self, name=None, text='', monograms=[],
+            bigrams=[], trigrams=[], parser=None
+        ):
+        self.name       = name
+        self.text       = text
+        self.monograms  = monograms
+        self.bigrams    = bigrams
+        self.trigrams   = trigrams
+        self.parser     = parser
 
     def tagify_to_article(self, article, fp):
+        # this method should be split into smaller functions
         hit_count   = 0
         while True:
 
@@ -97,6 +103,9 @@ class Tag:
         # do the token processing at this stage.
         if self.name == 'BODY':
             exclude = set(string.punctuation)
+
+            # text    = ''.join(ch for ch in self.text if ch not in exclude)
+            # can we change the following code to a statement like above?
             text = ''
 	    for ch in  self.text:
                 if ch in exclude:
@@ -104,20 +113,19 @@ class Tag:
                 else:
                     text += ch
 
-            # text    = ''.join(ch for ch in self.text if ch not in exclude)
-            all_tokens = text.split()
-            all_tokens = [w for w in all_tokens if not w in stopwords.words('english')]
-            all_tokens = [w for w in all_tokens if w.isdigit() is False]
-            for tok in all_tokens:
-                self.tokens.append(stemmer.stem(tok))
+            all_monos   = text.split()
+            all_monos   = [string.lower(w) for w in all_monos if not w in stopwords.words('english') and not w.isdigit()]
+            for tok in all_monos:
+                self.monograms.append(stemmer.stem(tok))
 
-            # tokens as monograms
-            fvector.add_to_vec_sum(article.id, self.tokens)
+            # processing the monograms
+            fvector.add_to_vec_sum(article.id, self.monograms)
 
             # tokens as bigrams
+            self.
             self.bigrams = []
             count = 0
-            for v in self.tokens:
+            for v in self.monograms:
                 if count == 0:
                     firstparam = v
                     count += 1
@@ -129,10 +137,10 @@ class Tag:
             fvector.add_to_vec_sum(article.id, self.bigrams)
 
         # this new tag should be appended to an Article
-        article.take_this_tag(self.name, self.text, self.tokens)
+        article.take_this_tag(self.name, self.text, self.monograms)
 
-        self.text   = ''
-        self.tokens = []
+        self.text       = ''
+        self.monograms  = []
 
         if len(article_list) % 1000 == 0 or len(article_list) == 10578:
             fp.seek(0,2)

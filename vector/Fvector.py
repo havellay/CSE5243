@@ -15,6 +15,7 @@ class Fvector:
     def add_to_vec_sum(self, articleid, tokens):
         max_freq = 0
         v   = {}
+
         for tok in tokens:
             if type(tok) is str:
                 tok = string.lower(tok)
