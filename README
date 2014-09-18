@@ -1,0 +1,88 @@
+
+Tokenizer and feature vector building on the Reuter's Dataset
+    by Haribabu and Asvin
+    for CSE 5243
+
+Our code contains the following crucial parts :
+1)  Retuers dataset : 
+        stored in $PROJECTHOME/reuters/
+2)  Script : 
+        located in $PROJECT/vector
+3)  'run.sh' script : 
+        which runs the required script
+
+In more detail :
+1) Reuter's Dataset:
+    This is stored as received in the $PROJECTHOME/reuters/ directort.
+    There are a total of 22 files and there are 21578 articles contained
+    in them.
+
+2) Script:
+    The script contains the following files:
+    - Article.py
+        This contains the definition of the Article class. While this is
+        mostly a necessity to keep to the object oriented standards, the
+        method Articles.take_this_tag(...) is one of importance.
+        An Article is identified by an 'id' and contains a dictionary 
+        called 'tags'. The 'id' is the same as that assigned to the
+        article in the dataset in the 'REUTERS' tag.
+        'tags' is a dictionary that contains instances of the 'Tags' class
+        stored in it. Each 'tag' can be identified by the name as in the
+        dataset : tags['BODY'], tags['TOPICS'], tags['DATE'] etc.
+        'take_this_tag()' method takes a set of parameters and passes them
+        on to a Tag() constructor and stores the resultant in the
+        corresponding location in the 'tags' dictionary.
+
+    - Fvector.py
+        The Fvector class contains the member variables that will mostly
+        help us with our feature vector construction and refinement.
+        Three instances of the 'Fvector' class will exist during runtime:
+        one for unigrams, another for bigrams and third for trigrams. Each
+        will have the variables 'vec_sum' (term frequency), 'vec_tfidf'
+        (TFIDF measure of the attributes), 'doc_with_gram' (This is the
+        count of the number of documents that the particular n-gram has
+        occurred across the dataset; this dictionary is hashed through
+        the particular word. 'gram_count_in_data' tells the number of
+        times that the ngram occurs across the dataset.
+        'add_to_vec_sum' adds the particular list of ngrams belonging
+        to an article to the instance of fvector. This also performs
+        addition of doc_with_gram and gram_count_in_data
+        'add_to_tf_idf' can only be done when the entire dataset is
+        processed completely because it requires a wholistic view of
+        the dataset as a whole. We got the formulae for calculating
+        the tfidf and tf from Wikipedia
+
+    - Parser.py
+        Parser examines the directory string stored in REUTERS_DIR
+        and starts parsing each *.sgm file present in this directory.
+        This also contains a list of worker 'Tag' instances that are
+        created to process each of the tokens occuring in the documents
+        A circular import dependency does exist with regards to the
+        Parser class, but it doesn't pose any risk at the moment.
+        'ninetyninetoone' is a method that examines a dictionary
+        containing a list of numbers hashed by words and selects
+        words from it which fit into the 99:1 threshold. We experiment
+        by giving 'doc_with_gram' and 'gram_count_in_data' separately
+        to this method and seeing the number of interesting attributes
+        that are identified. For the 'gram_count_in_data' parameter,
+        we have a wider selection of interesting attributes.
+
+    - Tag.py
+        This class contains the 'tagify_to_article' method which performs
+        most of the parsing of the file. It takes a file pointer and 
+        parses until the end of XML token in the file and adds it to the
+        corresponding members of a 'Tag' instance. A 'tag' stores the 
+        absolute 'text' that it contained in the dataset and also the
+        unigrams, bigrams and trigrams derieved from that text.
+        We use the nltk's stopwords list to remove stop-words from
+        our dataset. Also, we remove all punctuation marks, signle character
+        words and numbers. After this, we store the lower case equivalent
+        of the tokens and form unigrams, bigrams and trigrams from them.
+        We also use nltk's PorterStemmer() instance to stem our tokens.
+
+3) 'run.sh' script:
+        This script launches the Parser.py file which lands us onto a
+        (pdb) terminal from where the above mentioned data members can be
+        examined. In order to go directly to end of execution, the 
+        particular 'pdb' statements can be commented out.
+
