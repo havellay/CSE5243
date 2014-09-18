@@ -97,14 +97,14 @@ if __name__ == "__main__":
     not_needed  = []
     needed      = []
 
-    for v in fvector.doc_with_word:
-        if fvector.doc_with_word[v] == 1:
+    for v in fvector.doc_with_gram:
+        if fvector.doc_with_gram[v] == 1:
             not_needed.append(v)
         else:
             needed.append(v)
 
-    ninetyninetoone(fvector.doc_with_word)
-    ninetyninetoone(fvector.word_count_in_data)
+    ninetyninetoone(fvector.doc_with_gram)
+    ninetyninetoone(fvector.gram_count_in_data)
 
     import ipdb; ipdb.set_trace()
 

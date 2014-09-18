@@ -2,43 +2,42 @@ import string
 
 class Fvector:
     def __init__(self):
-        self.vec_sum     = {}            # feature vector that contains the sum of the
+        self.vec_sum     = {}   # feature vector that contains the sum of the
                                 # different tokens in the tag
 
-        self.vec_tfidf   = {}            # feature vector that contains TFIDF of tokens
+        self.vec_tfidf   = {}   # feature vector that contains TFIDF of tokens
 
-        self.doc_with_word   = {}        # a dict that stores the number of docs that
-                                # contain a word
+        self.doc_with_gram   = {}
+                                # a dict that stores the number of docs that
+                                # contain a gram
 
-        self.word_count_in_data = {}     # a dict that stores the number of times the 
-                                # word occurs across document
-
+        self.gram_count_in_data = {}
+                                # a dict that stores the number of times the 
+                                # gram occurs across document
+        
     def add_to_vec_sum(self, articleid, tokens):
-        max_freq = 0
-        v   = {}
+        max_freq= 0
+        v       = {}
 
         for tok in tokens:
-            if type(tok) is str:
-                tok = string.lower(tok)
-
             if v.get(tok) is None:
                 v[tok]  = 1
             else:
                 v[tok]  += 1
 
-            if self.word_count_in_data.get(tok) is None:
-                self.word_count_in_data[tok] = 1
+            if self.gram_count_in_data.get(tok) is None:
+                self.gram_count_in_data[tok] = 1
             else:
-                self.word_count_in_data[tok] += 1
+                self.gram_count_in_data[tok] += 1
 
             max_freq    = max(v[tok], max_freq)
 
-        for tok in v: #Unique words - v
+        for tok in v: #Unique grams - v
             v[tok]  = 0.5 + (0.5*v[tok])/max_freq
-            if self.doc_with_word.get(tok) is None:
-                self.doc_with_word[tok]  = 1
+            if self.doc_with_gram.get(tok) is None:
+                self.doc_with_gram[tok]  = 1
             else:
-                self.doc_with_word[tok]  += 1
+                self.doc_with_gram[tok]  += 1
 
         self.vec_sum[articleid] = v
 
@@ -50,7 +49,7 @@ class Fvector:
         for tok in tokset:
             tok = string.lower(tok)
             v[tok]  = tf_dict[tok]*(
-                        math.log(21578/self.doc_with_word[tok])
+                        math.log(21578/self.doc_with_gram[tok])
                     )
 
         self.vec_tfidf[articleid] = v

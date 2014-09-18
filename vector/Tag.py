@@ -28,7 +28,7 @@ class Tag:
         # this method should be split into smaller functions
         hit_count   = 0
         while True:
-
+            # FIX
             # This is purely a hack; need to fix what happens
             # for the last article
             if len(article_list) % 1000 == 0:
@@ -95,7 +95,6 @@ class Tag:
                     import ipdb; ipdb.set_trace()
                     break
 
-            # think about whether to store stripped strings
             self.text   += extracted+' '
             s   = s[endat + len(self.name+'>'):]
 
@@ -114,26 +113,8 @@ class Tag:
                     text += ch
 
             all_monos   = text.split()
-            all_monos   = [string.lower(w) for w in all_monos if not w in stopwords.words('english') and not w.isdigit()]
-            for tok in all_monos:
-                self.monograms.append(stemmer.stem(tok))
-
-            # processing the monograms
-            ##fvector.add_to_vec_sum(article.id, self.monograms)
-
-            # tokens as bigrams
-            '''self.
-            self.bigrams = []
-            count = 0
-            for v in self.monograms:
-                if count == 0:
-                    firstparam = v
-                    count += 1
-                    continue
-                secondparam = v
-                self.bigrams.append((firstparam, secondparam))
-                firstparam = secondparam'''
-
+            self.monograms = [string.lower(stemmer.stem(w)) for w in all_monos if not w in stopwords.words('english') and not w.isdigit() and len(w) > 1]
+            
             count = 0
             firstParam = secondParam = thirdParam = 0
             for tok in self.monograms:
@@ -149,24 +130,29 @@ class Tag:
                     thirdParam = tok
                     count+=1
  
+                # FIX value loss here
                 self.bigrams.append((firstParam,secondParam))
-		if count != 1:
-			self.trigrams.append((firstParam,secondParam,thirdParam))
+                if count != 1:
+                    self.trigrams.append((firstParam,secondParam,thirdParam))
                 firstParam = secondParam
                 secondParam = thirdParam
 
             fvector.add_to_vec_sum(article.id,self.monograms)
             fvector_bigram.add_to_vec_sum(article.id, self.bigrams)
             fvector_trigram.add_to_vec_sum(article.id, self.trigrams)
-            #fvector.add_to_vec_sum(article.id, self.bigrams)
-	    import ipdb; ipdb.set_trace()
 
         # this new tag should be appended to an Article
-        article.take_this_tag(self.name, self.text, self.monograms)
+        article.take_this_tag(
+                self.name, self.text, self.monograms,
+                self.bigrams, self.trigrams
+            )
 
         self.text       = ''
         self.monograms  = []
+        self.bigrams    = []
+        self.trigrams   = []
 
+        # THIS SHOULD BE FIXED
         if len(article_list) % 1000 == 0 or len(article_list) == 10578:
             fp.seek(0,2)
             return fp
