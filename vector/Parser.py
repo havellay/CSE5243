@@ -46,6 +46,8 @@ class Parser:
                 # seek the file object to the beginning of the 'REUTERS' tag
                 while '<REUTERS' not in s:
                     s = fp.readline()
+                    if len(article_list) == 21578:
+                        return DONE
                 length = len(s) - s.index('<REUTERS')
                 fp.seek(-1*length, 1)
 

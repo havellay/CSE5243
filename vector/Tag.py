@@ -113,7 +113,10 @@ class Tag:
                     text += ch
 
             all_monos   = text.split()
-            self.monograms = [string.lower(stemmer.stem(w)) for w in all_monos if not w in stopwords.words('english') and not w.isdigit() and len(w) > 1]
+            try:
+                self.monograms = [string.lower(stemmer.stem(w)) for w in all_monos if not w in stopwords.words('english') and not w.isdigit() and len(w) > 1]
+            except UnicodeWarning:
+                print 'Unicode warning; no worry'
             
             count = 0
             firstParam = secondParam = thirdParam = 0
