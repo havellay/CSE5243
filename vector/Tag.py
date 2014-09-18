@@ -1,6 +1,6 @@
 import string
 
-from Fvector import fvector
+from Fvector import fvector,fvector_bigram,fvector_trigram
 from nltk.corpus import stopwords
 from nltk.stem.porter import *
 
@@ -119,10 +119,10 @@ class Tag:
                 self.monograms.append(stemmer.stem(tok))
 
             # processing the monograms
-            fvector.add_to_vec_sum(article.id, self.monograms)
+            ##fvector.add_to_vec_sum(article.id, self.monograms)
 
             # tokens as bigrams
-            self.
+            '''self.
             self.bigrams = []
             count = 0
             for v in self.monograms:
@@ -132,9 +132,34 @@ class Tag:
                     continue
                 secondparam = v
                 self.bigrams.append((firstparam, secondparam))
-                firstparam = secondparam
+                firstparam = secondparam'''
 
-            fvector.add_to_vec_sum(article.id, self.bigrams)
+            count = 0
+            firstParam = secondParam = thirdParam = 0
+            for tok in self.monograms:
+                if count == 0:
+                    firstParam = tok
+                    count+=1
+                    continue
+                elif count == 1:
+                    secondParam = tok
+                    count+=1
+                    continue
+                else:
+                    thirdParam = tok
+                    count+=1
+ 
+                self.bigrams.append((firstParam,secondParam))
+		if count != 1:
+			self.trigrams.append((firstParam,secondParam,thirdParam))
+                firstParam = secondParam
+                secondParam = thirdParam
+
+            fvector.add_to_vec_sum(article.id,self.monograms)
+            fvector_bigram.add_to_vec_sum(article.id, self.bigrams)
+            fvector_trigram.add_to_vec_sum(article.id, self.trigrams)
+            #fvector.add_to_vec_sum(article.id, self.bigrams)
+	    import ipdb; ipdb.set_trace()
 
         # this new tag should be appended to an Article
         article.take_this_tag(self.name, self.text, self.monograms)

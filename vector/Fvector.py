@@ -1,15 +1,16 @@
 import string
 
 class Fvector:
-    vec_sum     = {}            # feature vector that contains the sum of the
+    def __init__(self):
+        self.vec_sum     = {}            # feature vector that contains the sum of the
                                 # different tokens in the tag
 
-    vec_tfidf   = {}            # feature vector that contains TFIDF of tokens
+        self.vec_tfidf   = {}            # feature vector that contains TFIDF of tokens
 
-    doc_with_word   = {}        # a dict that stores the number of docs that
+        self.doc_with_word   = {}        # a dict that stores the number of docs that
                                 # contain a word
 
-    word_count_in_data = {}     # a dict that stores the number of times the 
+        self.word_count_in_data = {}     # a dict that stores the number of times the 
                                 # word occurs across document
 
     def add_to_vec_sum(self, articleid, tokens):
@@ -55,3 +56,5 @@ class Fvector:
         self.vec_tfidf[articleid] = v
 
 fvector = Fvector()
+fvector_bigram = Fvector()
+fvector_trigram = Fvector()
