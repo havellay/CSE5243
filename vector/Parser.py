@@ -80,9 +80,11 @@ def ninetyninetoone(count_list):
 def main():
     # Finding all the files in the REUTERS directory
     for f in os.listdir(REUTERS_DIR):
-        if f.endswith('.sgm'):
+        if f.endswith('.sgm') and f != 'reut2-021.sgm':
             parser.process_file(f)
             # call the vector finder class or something for each file
+
+    parser.process_file('reut2-021.sgm')
 
     # all document and article sdone, we can find the tf-idf
     # for art in article_list:

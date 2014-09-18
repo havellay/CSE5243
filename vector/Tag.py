@@ -153,11 +153,15 @@ class Tag:
         self.trigrams   = []
 
         # THIS SHOULD BE FIXED
-        if len(article_list) % 1000 == 0 or len(article_list) == 10578:
+        if len(article_list) % 1000 == 0 or len(article_list) == 21578:
             fp.seek(0,2)
             return fp
 
-        length  = len(s) - s.index('>', endat) + 1
+        try:
+            length  = len(s) - s.index('>', endat) + 1
+        except:
+            fp.seek(0,2)
+            return fp
         fp.seek(-1*length, 1)
         return fp
 
