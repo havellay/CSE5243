@@ -7,4 +7,5 @@
 # Parser.py contains main() and launches all other scripts
 # dataset is contained with the source
 
+cd vector
 `which python` Parser.py
