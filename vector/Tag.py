@@ -160,4 +160,3 @@ class Tag:
         length  = len(s) - s.index('>', endat) + 1
         fp.seek(-1*length, 1)
         return fp
-
