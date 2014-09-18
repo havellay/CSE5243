@@ -164,4 +164,3 @@ class Tag:
             return fp
         fp.seek(-1*length, 1)
         return fp
-

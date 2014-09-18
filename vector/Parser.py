@@ -3,7 +3,7 @@ import nltk
 import string
 import math
 
-from Fvector import Fvector, fvector
+from Fvector import Fvector, fvector,fvector_bigram,fvector_trigram
 from Article import Article
 from Tag import Tag, article_list
 
@@ -75,7 +75,7 @@ def ninetyninetoone(count_list):
     for v in count_list:
         if count_list[v] <= interesting_upper and count_list[v] >= interesting_lower:
             considering_this.append(v)
-    import ipdb; ipdb.set_trace()
+    #import ipdb; ipdb.set_trace()
 
 def main():
     # Finding all the files in the REUTERS directory
@@ -107,6 +107,9 @@ if __name__ == "__main__":
 
     ninetyninetoone(fvector.doc_with_gram)
     ninetyninetoone(fvector.gram_count_in_data)
+    ninetyninetoone(fvector_bigram.doc_with_gram)
+    ninetyninetoone(fvector_bigram.gram_count_in_data)
+    ninetyninetoone(fvector_trigram.doc_with_gram)
+    ninetyninetoone(fvector_trigram.gram_count_in_data)
 
-    import ipdb; ipdb.set_trace()
-
+    #import ipdb; ipdb.set_trace()
