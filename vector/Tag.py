@@ -156,8 +156,7 @@ class Tag:
         self.trigrams   = []
 
         # THIS SHOULD BE FIXED
-        # if len(article_list) % 1000 == 0 or len(article_list) == 21578:
-        if len(article_list) % 1000 == 0 or len(article_list) == 1578:
+        if len(article_list) % 1000 == 0 or len(article_list) == 21578:
             fp.seek(0,2)
             return fp
 

@@ -7,7 +7,7 @@ from Fvector import Fvector, fvector,fvector_bigram,fvector_trigram
 from Article import Article
 from Tag import Tag, article_list
 
-REUTERS_DIR = '../reuters_smaller/'     # relative location of directory where
+REUTERS_DIR = '../reuters/'     # relative location of directory where
                                         # the reuters dataset is stored
 
 FAIL = 1
@@ -101,7 +101,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    print 'Processed '+len(article_list)+' articles'
+    print 'Processed '+str(len(article_list))+' articles'
 
     not_needed  = []
     needed      = []
