@@ -57,9 +57,8 @@ class Parser:
                 article = Article(len(article_list)+1)
                 article_list.append(article)
                 self.worker_tags['REUTERS'].tagify_to_article(article, fp)
-                # print 'article {} done'.format(article.id)
 
-        print 'DONE WITH {}'.format(f)
+        print 'DONE WITH '+f
         return DONE
 
 parser = Parser()
@@ -102,7 +101,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-    print 'Processed {} articles'.format(len(article_list))
+    print 'Processed '+len(article_list)+' articles'
 
     not_needed  = []
     needed      = []
@@ -114,8 +113,10 @@ if __name__ == "__main__":
             needed.append(v)
 
     fvectors_to_complete = [fvector, fvector_bigram, fvector_trigram]
+    file_name_count = 0
     for fvec in fvectors_to_complete:
-        fvec.complete_feature_vector(article_list)
+        file_name_count += 2
+        fvec.complete_feature_vector(article_list, file_name_count)
 
     if print_plots is True:
         from matplotlib import pyplot

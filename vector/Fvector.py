@@ -54,10 +54,8 @@ class Fvector:
 
         self.vec_tfidf[articleid] = v
 
-    def complete_feature_vector(self, article_list):
-        file_name_count = 0
+    def complete_feature_vector(self, article_list, file_name_count):
         for article in article_list:
-            file_name_count += 2
             if article.tags.get('BODY') is None:
                 continue
             vectors_to_change = [self.vec_sum, self.vec_tfidf]
@@ -75,18 +73,18 @@ class Fvector:
             f.write(str(self.vec_sum[article_id]['PLACES_TAG_INFO'])+',')
             for key in self.vec_sum[article_id]:
                 if key not in ['TOPICS_TAG_INFO', 'PLACES_TAG_INFO', 'ARTICLE_ID_INFO']:
-                    f.write(str(self.vec_sum[key])+',')
+                    f.write(str(key)+':'+str(self.vec_sum[article_id][key])+',')
             f.write('\n')
         f.close()
 
-        f = open('../output/featurevector'+file_name_count+1, 'w')
+        f = open('../output/featurevector'+str(file_name_count+1), 'w')
         for article_id in self.vec_tfidf:
-            f.write(str(self.vec_sum[article_id]['ARTICLE_ID_INFO'])+',')
-            f.write(str(self.vec_sum[article_id]['TOPICS_TAG_INFO'])+',')
-            f.write(str(self.vec_sum[article_id]['PLACES_TAG_INFO'])+',')
-            for key in self.vec_sum[article_id]:
+            f.write(str(self.vec_tfidf[article_id]['ARTICLE_ID_INFO'])+',')
+            f.write(str(self.vec_tfidf[article_id]['TOPICS_TAG_INFO'])+',')
+            f.write(str(self.vec_tfidf[article_id]['PLACES_TAG_INFO'])+',')
+            for key in self.vec_tfidf[article_id]:
                 if key not in ['TOPICS_TAG_INFO', 'PLACES_TAG_INFO', 'ARTICLE_ID_INFO']:
-                    f.write(str(self.vec_sum[key])+',')
+                    f.write(str(key)+':'+str(self.vec_tfidf[article_id][key])+',')
             f.write('\n')
         f.close()
 
