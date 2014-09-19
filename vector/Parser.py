@@ -7,11 +7,13 @@ from Fvector import Fvector, fvector,fvector_bigram,fvector_trigram
 from Article import Article
 from Tag import Tag, article_list
 
-REUTERS_DIR = '../reuters/'             # relative location of directory where
+REUTERS_DIR = '../reuters_smaller/'     # relative location of directory where
                                         # the reuters dataset is stored
 
 FAIL = 1
 DONE = 0
+
+print_plots = False                     # Don't try to print plots
 
 class Parser:
     worker_tags = {}
@@ -78,6 +80,7 @@ def ninetyninetoone(count_list):
         if count_list[v] <= interesting_upper and count_list[v] >= interesting_lower:
             considering_this.append(v)
     #import ipdb; ipdb.set_trace()
+    return considering_this
 
 def main():
     # Finding all the files in the REUTERS directory
@@ -86,13 +89,16 @@ def main():
             parser.process_file(f)
             # call the vector finder class or something for each file
 
-    parser.process_file('reut2-021.sgm')
+    if 'reut2-021.sgm' in os.listdir(REUTERS_DIR):
+        parser.process_file('reut2-021.sgm')
 
     # all document and article sdone, we can find the tf-idf
-    # for art in article_list:
-    #     bodytag = art.tags.get('BODY')
-    #     if bodytag is not None:
-    #         fvector.add_to_tf_idf(art.id, bodytag.tokens)
+    for art in article_list:
+        bodytag = art.tags.get('BODY')
+        if bodytag is not None:
+            fvector.add_to_tf_idf(art.id, bodytag.monograms)
+            fvector_bigram.add_to_tf_idf(art.id, bodytag.bigrams)
+            fvector_trigram.add_to_tf_idf(art.id, bodytag.trigrams)
 
 if __name__ == "__main__":
     main()
@@ -107,11 +113,31 @@ if __name__ == "__main__":
         else:
             needed.append(v)
 
-    ninetyninetoone(fvector.doc_with_gram)
-    ninetyninetoone(fvector.gram_count_in_data)
-    ninetyninetoone(fvector_bigram.doc_with_gram)
-    ninetyninetoone(fvector_bigram.gram_count_in_data)
-    ninetyninetoone(fvector_trigram.doc_with_gram)
-    ninetyninetoone(fvector_trigram.gram_count_in_data)
+    fvectors_to_complete = [fvector, fvector_bigram, fvector_trigram]
+    for fvec in fvectors_to_complete:
+        fvec.complete_feature_vector(article_list)
 
-    #import ipdb; ipdb.set_trace()
+    if print_plots is True:
+        from matplotlib import pyplot
+        from numpy import arange
+        import bisect
+
+    threshold_using = [
+            fvector.doc_with_gram,
+            fvector.gram_count_in_data,
+            fvector_bigram.doc_with_gram,
+            fvector_bigram.gram_count_in_data,
+            fvector_trigram.doc_with_gram,
+            fvector_trigram.gram_count_in_data
+        ]
+
+    for metric in threshold_using:
+        output = ninetyninetoone(metric)
+        vector = [metric[x] for x in output]
+        if print_plots is True:
+            y = sorted(vector)
+            x = range(len(y))
+            pyplot.plot(x, y, 'b.')
+            pyplot.show()
+        print 'Please examine len(output) to see number of interesting terms'
+        import pdb; pdb.set_trace()

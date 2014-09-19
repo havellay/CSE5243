@@ -1,4 +1,5 @@
 import string
+import math
 
 class Fvector:
     def __init__(self):
@@ -47,12 +48,50 @@ class Fvector:
         tokset  = set(tokens)
 
         for tok in tokset:
-            tok = string.lower(tok)
             v[tok]  = tf_dict[tok]*(
                         math.log(21578/self.doc_with_gram[tok])
                     )
 
         self.vec_tfidf[articleid] = v
+
+    def complete_feature_vector(self, article_list):
+        file_name_count = 0
+        for article in article_list:
+            file_name_count += 2
+            if article.tags.get('BODY') is None:
+                continue
+            vectors_to_change = [self.vec_sum, self.vec_tfidf]
+            for vector in vectors_to_change:
+                v = vector[article.id]
+                v['TOPICS_TAG_INFO']    = article.tags['TOPICS'].text
+                v['PLACES_TAG_INFO']    = article.tags['PLACES'].text
+                v['ARTICLE_ID_INFO']    = article.id
+
+        # writing the feature vector to a file
+        f = open('../output/featurevector'+str(file_name_count), 'w')
+        for article_id in self.vec_sum:
+            f.write(str(self.vec_sum[article_id]['ARTICLE_ID_INFO'])+',')
+            f.write(str(self.vec_sum[article_id]['TOPICS_TAG_INFO'])+',')
+            f.write(str(self.vec_sum[article_id]['PLACES_TAG_INFO'])+',')
+            for key in self.vec_sum[article_id]:
+                if key not in ['TOPICS_TAG_INFO', 'PLACES_TAG_INFO', 'ARTICLE_ID_INFO']:
+                    f.write(str(self.vec_sum[key])+',')
+            f.write('\n')
+        f.close()
+
+        f = open('../output/featurevector'+file_name_count+1, 'w')
+        for article_id in self.vec_tfidf:
+            f.write(str(self.vec_sum[article_id]['ARTICLE_ID_INFO'])+',')
+            f.write(str(self.vec_sum[article_id]['TOPICS_TAG_INFO'])+',')
+            f.write(str(self.vec_sum[article_id]['PLACES_TAG_INFO'])+',')
+            for key in self.vec_sum[article_id]:
+                if key not in ['TOPICS_TAG_INFO', 'PLACES_TAG_INFO', 'ARTICLE_ID_INFO']:
+                    f.write(str(self.vec_sum[key])+',')
+            f.write('\n')
+        f.close()
+
+        print 'Feature vector complted : examine'
+        import pdb; pdb.set_trace()
 
 fvector = Fvector()
 fvector_bigram = Fvector()
