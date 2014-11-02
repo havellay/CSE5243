@@ -78,7 +78,6 @@ def ninetyninetoone(count_list):
     for v in count_list:
         if count_list[v] <= interesting_upper and count_list[v] >= interesting_lower:
             considering_this.append(v)
-    #import ipdb; ipdb.set_trace()
     return considering_this
 
 def main():
@@ -101,6 +100,39 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    def buildvector(columns, metric):
+        import pdb; pdb.set_trace()
+        vector_list = []
+        if (metric is fvector.doc_with_gram
+                or metric is fvector.gram_count_in_data):
+            # monograms
+            using_tfidf = fvector.vec_tfidf
+        elif (metric is fvector_bigram.doc_with_gram
+                or metric is fvector_bigram.gram_count_in_data):
+            # bigrams
+            using_tfidf = fvector_bigram.vec_tfidf
+        elif (metric is fvector_trigram.doc_with_gram
+                or metric is fvector_trigram.gram_count_in_data):
+            # trigrams
+            using_tfidf = fvector_trigram.vec_tfidf
+
+        for article_id in using_tfidf:
+            vector = []
+            # first two entries in vector is the true data
+            if article_list[article_id].tags.get('TOPICS') is not None:
+                vector.append(article_list[article_id].tags.get('TOPICS').topiclist)
+            else:
+                continue
+            if article_list[article_id].tags.get('PLACES') is not None:
+                vector.append(article_list[article_id].tags.get('PLACES').placelist)
+            for col in columns:
+                vector.append(using_tfidf[article_id].get(col) or 0)
+            vector_list.append(vector)
+
+        import pdb; pdb.set_trace()
+        return vector_list
+
     print 'Processed '+str(len(article_list))+' articles'
 
     not_needed  = []
@@ -112,19 +144,87 @@ if __name__ == "__main__":
         else:
             needed.append(v)
 
-    fvectors_to_complete = [fvector, fvector_bigram, fvector_trigram]
-    file_name_count = 0
-    for fvec in fvectors_to_complete:
-        file_name_count += 2
-        fvec.complete_feature_vector(article_list, file_name_count)
+    # fvectors_to_complete = [fvector, fvector_bigram, fvector_trigram]
+    # file_name_count = 0
+    # for fvec in fvectors_to_complete:
+    #     file_name_count += 2
+    #     fvec.complete_feature_vector(article_list, file_name_count)
 
     if print_plots is True:
         from matplotlib import pyplot
         from numpy import arange
         import bisect
 
+    def KNNTest(vector):
+
+        with open('KNN_monogram_2.pickle','w') as f:
+            import pickle
+            pickle.dump([vector], f)
+
+        import pdb; pdb.set_trace()
+        # split as training data and testing data
+        initial_trainset    = vector[0:int(0.6*len(vector))]
+        trainset    = []
+        trainlabel  = []
+        testset     = vector[int(0.6*len(vector))+1:]
+        testlabel   = []
+        topics      = {}
+
+        label_count = 0
+
+        # assign a unique number to each element
+        # in the topic labels of vector
+        for v in initial_trainset:
+            topiclist = v[0]
+            del v[0]
+            # placelist = v[0]
+            del v[0]    # --> getting rid of placelist
+            for topic in topiclist:
+                # for vectors with multiple topics
+                # make multiple vectors each containing 
+                # only one topic
+                if topics.get(topic) is None:
+                    topics[topic]   = label_count
+                    label_count     += 1
+                trainset.append(v)
+                trainlabel.append(topics.get(topic))
+                # might have to do something similar 
+                # to what is above for placelist
+        del initial_trainset
+        
+        for v in testset:
+            testlabel.append([v[0]])
+            del v[0]
+            # we aren't using placelist right now,
+            # we can revisit this later
+            # placelist = v[0]
+            del v[0]    # --> getting rid of placelist
+
+        # using 'trainset', 'trainlabel' we can create our model now
+        import pdb; pdb.set_trace()
+        from sklearn.neighbors import KNeighborsClassifier
+        neigh = KNeighborsClassifier(n_neighbors=50)
+        neigh.fit(trainset, trainlabel)
+
+        count = 0
+        correct = 0
+        for v in testset:
+            predicted   = neigh.predict(v)
+            predicted_label = [x for x in topics if topics[x] == predicted]
+
+            for act in testlabel[count]:
+                for val in act:
+                    if topics.get(val) == predicted:
+                        correct+=1
+            count   += 1
+
+        print correct
+
+        a = 1
+        import pdb; pdb.set_trace()
+
     threshold_using = [
-            fvector.doc_with_gram,
+            # fvector.doc_with_gram,
             fvector.gram_count_in_data,
             fvector_bigram.doc_with_gram,
             fvector_bigram.gram_count_in_data,
@@ -134,6 +234,10 @@ if __name__ == "__main__":
 
     for metric in threshold_using:
         output = ninetyninetoone(metric)
+
+        # build the vector for each article here using the terms in 'output'
+        KNNTest(buildvector(output, metric))
+
         vector = [metric[x] for x in output]
         if print_plots is True:
             y = sorted(vector)
@@ -141,4 +245,7 @@ if __name__ == "__main__":
             pyplot.plot(x, y, 'b.')
             pyplot.show()
         print 'Please examine len(output) to see number of interesting terms'
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
+
+
+

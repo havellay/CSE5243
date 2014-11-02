@@ -89,7 +89,7 @@ class Fvector:
         f.close()
 
         print 'Feature vector complted : examine'
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
 
 fvector = Fvector()
 fvector_bigram = Fvector()

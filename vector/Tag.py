@@ -15,7 +15,8 @@ DONE = 0
 class Tag:
     def __init__(
             self, name=None, text='', monograms=[],
-            bigrams=[], trigrams=[], parser=None
+            bigrams=[], trigrams=[], parser=None,
+            topiclist=[], placelist=[],
         ):
         self.name       = name
         self.text       = text
@@ -23,6 +24,8 @@ class Tag:
         self.bigrams    = bigrams
         self.trigrams   = trigrams
         self.parser     = parser
+        self.topiclist  = topiclist
+        self.placelist  = placelist
 
     def tagify_to_article(self, article, fp):
         # this method should be split into smaller functions
@@ -92,11 +95,29 @@ class Tag:
                     continue
                 else:
                     print 'should never reach here'
-                    import ipdb; ipdb.set_trace()
+                    import pdb; pdb.set_trace()
                     break
 
             self.text   += extracted+' '
             s   = s[endat + len(self.name+'>'):]
+
+        def get_rid_of_D(param):
+            temp_str = ''
+            exc = set('<>D /')
+            for ch in param:
+                if ch in exc:
+                    temp_str += ' '
+                else:
+                    temp_str += ch
+            string_list = temp_str.split()
+            return string_list
+
+        # we need to clean the 'TOPICS' and 'PLACES'
+        if self.name == 'TOPICS':
+            self.topiclist  = get_rid_of_D(self.text)
+
+        if self.name == 'PLACES':
+            self.placelist  = get_rid_of_D(self.text)
 
         # we have all the text at this point; we should
         # do the token processing at this stage.
@@ -146,14 +167,21 @@ class Tag:
 
         # this new tag should be appended to an Article
         article.take_this_tag(
-                self.name, self.text, self.monograms,
-                self.bigrams, self.trigrams
+                tag_name=self.name,
+                tag_text=self.text,
+                tag_monograms=self.monograms,
+                tag_bigrams=self.bigrams,
+                tag_trigrams=self.trigrams,
+                tag_topiclist=self.topiclist,
+                tag_placelist=self.placelist,
             )
 
         self.text       = ''
         self.monograms  = []
         self.bigrams    = []
         self.trigrams   = []
+        self.topiclist  = []
+        self.placelist  = []
 
         # THIS SHOULD BE FIXED
         if len(article_list) % 1000 == 0 or len(article_list) == 21578:
